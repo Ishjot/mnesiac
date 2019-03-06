@@ -8,10 +8,12 @@ defmodule Mnesiac do
   @doc """
   Start Mnesia with strict host checking
   """
-  def init_mnesia(nodes) do
+  def init_mnesia(config) do
+    selected_nodes = config |> select_nodes() |> List.flatten()
+
     nodes =
       Enum.filter(Node.list(), fn node ->
-        node in List.flatten(nodes)
+        node in selected_nodes
       end)
 
     case nodes do
@@ -186,5 +188,18 @@ defmodule Mnesiac do
         Process.sleep(1_000)
         wait_for(:stop)
     end
+  end
+
+  defp select_nodes({module, function})
+       when is_atom(module) and is_atom(function) do
+    apply(module, function, [])
+  end
+
+  defp select_nodes(node_selector) when is_function(node_selector, 2) do
+    apply(node_selector, [])
+  end
+
+  defp select_nodes(node_list) when is_list(node_list) do
+    node_list
   end
 end
